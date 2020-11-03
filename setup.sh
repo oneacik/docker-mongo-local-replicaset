@@ -10,7 +10,7 @@ function waitForMongo {
     user=$2
     pass=$3
     n=0
-    until [ $n -ge 20 ]
+    until [ $n -ge 18 ]
     do
         if [ -z "$user" ]; then
             mongo admin --quiet --port $port --eval "db" && break
@@ -19,7 +19,7 @@ function waitForMongo {
             mongo admin --quiet --port $port -u $user -p $pass --eval "db" && break
         fi
         n=$[$n+1]
-        sleep 2
+        sleep 10
     done
 }
 
@@ -28,13 +28,13 @@ if [ ! "$(ls -A /data/db1)" ]; then
     mkdir /data/db2
     mkdir /data/db3
 
-    mongod --smallfiles --dbpath /data/db1 &
+    mongod --port 2137 --dbpath /data/db1 &
     MONGO_PID=$!
 
-    waitForMongo 27017
+    waitForMongo 2137
 
     echo "CREATING USER ACCOUNT"
-    mongo admin --eval "db.createUser({ user: '$USERNAME', pwd: '$PASSWORD', roles: ['root', 'restore', 'readWriteAnyDatabase', 'dbAdminAnyDatabase'] })"
+    mongo admin --port 2137 --eval "db.createUser({ user: '$USERNAME', pwd: '$PASSWORD', roles: ['root', 'restore', 'readWriteAnyDatabase', 'dbAdminAnyDatabase'] })"
 
     echo "KILLING MONGO"
     kill $MONGO_PID
@@ -49,11 +49,11 @@ chmod 600 /var/mongo_keyfile
 
 echo "STARTING CLUSTER"
 
-mongod --port 27003 --smallfiles --dbpath /data/db3 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
+mongod --bind_ip_all --port 27003 --dbpath /data/db3 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
 DB3_PID=$!
-mongod --port 27002 --smallfiles --dbpath /data/db2 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
+mongod --bind_ip_all --port 27002 --dbpath /data/db2 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
 DB2_PID=$!
-mongod --port 27001 --smallfiles --dbpath /data/db1 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
+mongod --bind_ip_all --port 27001 --dbpath /data/db1 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
 DB1_PID=$!
 
 waitForMongo 27001 $USERNAME $PASSWORD
