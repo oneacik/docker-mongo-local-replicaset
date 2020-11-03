@@ -39,21 +39,21 @@ if [ ! "$(ls -A /data/db1)" ]; then
     echo "KILLING MONGO"
     kill $MONGO_PID
     wait $MONGO_PID
+    
+    echo "WRITING KEYFILE"
+    
+    openssl rand -base64 741 > /data/mongo_keyfile
+    chown mongodb /data/mongo_keyfile
+    chmod 600 /data/mongo_keyfile
 fi
-
-echo "WRITING KEYFILE"
-
-openssl rand -base64 741 > /var/mongo_keyfile
-chown mongodb /var/mongo_keyfile
-chmod 600 /var/mongo_keyfile
 
 echo "STARTING CLUSTER"
 
-mongod --bind_ip_all --port 27003 --dbpath /data/db3 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
+mongod --bind_ip_all --port 27003 --dbpath /data/db3 --auth --replSet rs0 --keyFile /data/mongo_keyfile  &
 DB3_PID=$!
-mongod --bind_ip_all --port 27002 --dbpath /data/db2 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
+mongod --bind_ip_all --port 27002 --dbpath /data/db2 --auth --replSet rs0 --keyFile /data/mongo_keyfile  &
 DB2_PID=$!
-mongod --bind_ip_all --port 27001 --dbpath /data/db1 --auth --replSet rs0 --keyFile /var/mongo_keyfile  &
+mongod --bind_ip_all --port 27001 --dbpath /data/db1 --auth --replSet rs0 --keyFile /data/mongo_keyfile  &
 DB1_PID=$!
 
 waitForMongo 27001 $USERNAME $PASSWORD
